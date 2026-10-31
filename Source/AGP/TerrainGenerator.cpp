@@ -112,7 +112,11 @@ void ATerrainGenerator::GenerateTerrain()
         Vertices.Num() - 1
     );
 
-    FVector Location = Vertices[RandomVertex];
+    FVector Location =
+    GetActorTransform().TransformPosition(
+        Vertices[RandomVertex]
+    );
+
     Location.Z -= 500.0f;
 
     AStaticMeshActor* Rock =
