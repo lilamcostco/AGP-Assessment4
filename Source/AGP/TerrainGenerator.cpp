@@ -16,6 +16,9 @@ ATerrainGenerator::ATerrainGenerator()
     Mesh = CreateDefaultSubobject<UProceduralMeshComponent>(
         TEXT("TerrainMesh")
     );
+    
+    // (Liam) changing ignores to be compatible with FlowField Feature
+    // Mesh->SetCollisionResponseToChannel(ECC_, ECR_Block);
 
     RootComponent = Mesh;
 }
