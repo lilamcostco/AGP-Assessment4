@@ -26,8 +26,17 @@ public:
 	// Sets default values for this component's properties
 	UAINavigationComponent();
 
-	UFUNCTION( BlueprintCallable )
+	UFUNCTION(BlueprintCallable)
 	void UpdateFlowField(AFlowFieldGrid* NewFlowField);
+	
+	UPROPERTY(EditAnywhere, Category = "AI State")
+	float DetectionRadius = 1000.f;
+	
+	UPROPERTY(EditAnywhere, Category = "AI State")
+	float LoseRadius = 1400.f;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "AI State")
+	EAIState AIState = EAIState::Idle;
 	
 protected:
 	// Called when the game starts
@@ -49,6 +58,8 @@ private:
 	AFlowFieldGrid* GetGrid();
 	void MoveEnemy(float DeltaTime);
 	
+	// Updates the state when in the radius or outside of radius
+	void UpdateState();
 	
 	// void CheckFlowFieldCell();
 	// updates only when the active cell has changed

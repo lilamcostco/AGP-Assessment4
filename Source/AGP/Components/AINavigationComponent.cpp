@@ -66,6 +66,10 @@ void UAINavigationComponent::MoveEnemy(float DeltaTime)
 		return;   // grid not ready yet, retried next tick
 	}
     
+	UpdateState();
+	if (AIState == EAIState::Idle) return; // dont move if idle
+	
+	
 	UpdateMoveDirection();
     
     if (MoveDirection.IsNearlyZero())
@@ -77,6 +81,33 @@ void UAINavigationComponent::MoveEnemy(float DeltaTime)
     {
        Pawn->AddMovementInput(MoveDirection, 1.f);
     }
+}
+
+void UAINavigationComponent::UpdateState()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+	
+	float NearestSq = MAX_flt;
+	const int32 NumPlayers = UGameplayStatics::GetNumPlayerControllers(this);
+	for (int32 i = 0; i < NumPlayers; i++)
+	{
+		if (const APawn* Player = UGameplayStatics::GetPlayerPawn(this, i))
+		{
+			NearestSq = FMath::Min(NearestSq, 
+				FVector::DistSquared2D(Owner->GetActorLocation(), Player->GetActorLocation()));
+		}
+	}
+	
+	if (AIState == EAIState::Idle && NearestSq <= FMath::Square(DetectionRadius)) // Idle and in distance
+	{
+		AIState = EAIState::Chasing;
+	}
+	else if (AIState == EAIState::Chasing && NearestSq > FMath::Square(LoseRadius)) // Chasing but outside the distance
+	{
+		AIState = EAIState::Idle;
+	}
+	
 }
 
 void UAINavigationComponent::UpdateMoveDirection()
