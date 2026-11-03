@@ -26,6 +26,8 @@ public:
 	
 	void RegisterEnemy(UAINavigationComponent* Enemy);
 	void UnregisterEnemy(UAINavigationComponent* Enemy);
+	
+	void RebuildGrid();
 
 protected:
 	// Called when the game starts or when spawned

@@ -1,11 +1,16 @@
 #include "TerrainGenerator.h"
+
+#include "AGP.h"
 #include "ProceduralMeshComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "FlowField/FlowFieldManager.h"
+#include "Kismet/GameplayStatics.h"
 
 
+class AFlowFieldManager;
 
 ATerrainGenerator::ATerrainGenerator()
 {
@@ -18,7 +23,7 @@ ATerrainGenerator::ATerrainGenerator()
     );
     
     // (Liam) changing ignores to be compatible with FlowField Feature
-    // Mesh->SetCollisionResponseToChannel(ECC_, ECR_Block);
+    Mesh->SetCollisionResponseToChannel(ECC_NavGround, ECR_Block);
 
     RootComponent = Mesh;
 }
@@ -109,83 +114,88 @@ void ATerrainGenerator::GenerateTerrain()
     UE_LOG(LogTemp, Warning, TEXT("Terrain Created"));
 
     for (int32 i = 0; i < 30; i++)
-{
-    int32 RandomVertex = FMath::RandRange(
-        0,
-        Vertices.Num() - 1
-    );
-
-    FVector Location =
-    GetActorTransform().TransformPosition(
-        Vertices[RandomVertex]
-    );
-
-    Location.Z -= 500.0f;
-
-    AStaticMeshActor* Rock =
-        GetWorld()->SpawnActor<AStaticMeshActor>(
-            AStaticMeshActor::StaticClass(),
-            Location,
-            FRotator(
-                0.0f,
-                FMath::RandRange(0.0f, 360.0f),
-                0.0f
-            )
-        );
-
-    if (Rock)
     {
-        UStaticMeshComponent* MeshComponent =
-            Rock->GetStaticMeshComponent();
-
-        if (MeshComponent)
+        int32 RandomVertex = FMath::RandRange(
+            0,
+            Vertices.Num() - 1
+        );
+    
+        FVector Location =
+        GetActorTransform().TransformPosition(
+            Vertices[RandomVertex]
+        );
+    
+        Location.Z -= 500.0f;
+    
+        AStaticMeshActor* Rock =
+            GetWorld()->SpawnActor<AStaticMeshActor>(
+                AStaticMeshActor::StaticClass(),
+                Location,
+                FRotator(
+                    0.0f,
+                    FMath::RandRange(0.0f, 360.0f),
+                    0.0f
+                )
+            );
+    
+        if (Rock)
         {
-            UStaticMesh* CubeMesh =
-                LoadObject<UStaticMesh>(
-                    nullptr,
-                    TEXT("/Engine/BasicShapes/Cube.Cube")
-                );
-
-            if (CubeMesh)
+            UStaticMeshComponent* MeshComponent =
+                Rock->GetStaticMeshComponent();
+    
+            if (MeshComponent)
             {
-                UE_LOG(LogTemp, Warning, TEXT("Rock mesh loaded"));
-
-                MeshComponent->SetStaticMesh(CubeMesh);
-
-                UMaterialInterface* RockMaterial =
-                    LoadObject<UMaterialInterface>(
+                UStaticMesh* CubeMesh =
+                    LoadObject<UStaticMesh>(
                         nullptr,
-                        TEXT("/Game/M_Rock.M_Rock")
+                        TEXT("/Engine/BasicShapes/Cube.Cube")
                     );
-
-                if (RockMaterial)
+    
+                if (CubeMesh)
                 {
-                    MeshComponent->SetMaterial(
-                        0,
-                        RockMaterial
+                    UE_LOG(LogTemp, Warning, TEXT("Rock mesh loaded"));
+    
+                    MeshComponent->SetStaticMesh(CubeMesh);
+    
+                    UMaterialInterface* RockMaterial =
+                        LoadObject<UMaterialInterface>(
+                            nullptr,
+                            TEXT("/Game/M_Rock.M_Rock")
+                        );
+    
+                    if (RockMaterial)
+                    {
+                        MeshComponent->SetMaterial(
+                            0,
+                            RockMaterial
+                        );
+                    };
+    
+                    float ScaleX =
+                        FMath::RandRange(2.0f, 3.0f);
+    
+                    float ScaleY =
+                        FMath::RandRange(2.0f, 3.0f);
+    
+                    float ScaleZ =
+                        FMath::RandRange(8.0f, 20.0f);
+    
+                    Rock->SetActorScale3D(
+                        FVector(
+                            ScaleX,
+                            ScaleY,
+                            ScaleZ
+                        )
                     );
-                };
-
-                float ScaleX =
-                    FMath::RandRange(2.0f, 3.0f);
-
-                float ScaleY =
-                    FMath::RandRange(2.0f, 3.0f);
-
-                float ScaleZ =
-                    FMath::RandRange(8.0f, 20.0f);
-
-                Rock->SetActorScale3D(
-                    FVector(
-                        ScaleX,
-                        ScaleY,
-                        ScaleZ
-                    )
-                );
+                }
             }
         }
     }
-}
-
+    
+    if (AFlowFieldManager* Manager = Cast<AFlowFieldManager>(
+        UGameplayStatics::GetActorOfClass(this, AFlowFieldManager::StaticClass())))
+    {
+        Manager->RebuildGrid();
+    }
 
 }

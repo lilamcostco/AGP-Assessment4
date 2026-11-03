@@ -62,6 +62,14 @@ void AFlowFieldManager::UnregisterEnemy(UAINavigationComponent* Enemy)
 	Enemies.Remove(Enemy);
 }
 
+void AFlowFieldManager::RebuildGrid()
+{
+	if (!HasAuthority() || !FlowGrid) return;
+
+	FlowGrid->BuildGrid();
+	LastGoalCells.Reset();
+}
+
 void AFlowFieldManager::UpdateEnemyStates()
 {
 	// Gather player positions
