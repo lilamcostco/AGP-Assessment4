@@ -28,6 +28,20 @@ void UAINavigationComponent::UpdateFlowField(AFlowFieldGrid* NewFlowField)
 void UAINavigationComponent::BeginPlay()
 {
     Super::BeginPlay();
+	
+	if (!GetOwner()->HasAuthority())
+	{
+		SetComponentTickEnabled(false);
+		return;
+	}
+	
+	// Register with the manager
+	Manager = Cast<AFlowFieldManager>(UGameplayStatics::GetActorOfClass(this, AFlowFieldManager::StaticClass()));
+	
+	if (Manager)
+	{
+		Manager->RegisterEnemy(this);
+	}
 }
 
 // Called every frame
@@ -66,7 +80,6 @@ void UAINavigationComponent::MoveEnemy(float DeltaTime)
 		return;   // grid not ready yet, retried next tick
 	}
     
-	UpdateState();
 	if (AIState == EAIState::Idle) return; // dont move if idle
 	
 	
@@ -83,20 +96,16 @@ void UAINavigationComponent::MoveEnemy(float DeltaTime)
     }
 }
 
-void UAINavigationComponent::UpdateState()
+void UAINavigationComponent::UpdateStateFromPlayers(const TArray<FVector>& PlayerLocations)
+
 {
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
 	
 	float NearestSq = MAX_flt;
-	const int32 NumPlayers = UGameplayStatics::GetNumPlayerControllers(this);
-	for (int32 i = 0; i < NumPlayers; i++)
+	for (const FVector& PlayerLocation : PlayerLocations)
 	{
-		if (const APawn* Player = UGameplayStatics::GetPlayerPawn(this, i))
-		{
-			NearestSq = FMath::Min(NearestSq, 
-				FVector::DistSquared2D(Owner->GetActorLocation(), Player->GetActorLocation()));
-		}
+		NearestSq = FMath::Min(NearestSq, FVector::DistSquared2D(Owner->GetActorLocation(), PlayerLocation));
 	}
 	
 	if (AIState == EAIState::Idle && NearestSq <= FMath::Square(DetectionRadius)) // Idle and in distance
@@ -108,6 +117,15 @@ void UAINavigationComponent::UpdateState()
 		AIState = EAIState::Idle;
 	}
 	
+}
+
+void UAINavigationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (IsValid(Manager))
+	{
+		Manager->UnregisterEnemy(this);
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 void UAINavigationComponent::UpdateMoveDirection()

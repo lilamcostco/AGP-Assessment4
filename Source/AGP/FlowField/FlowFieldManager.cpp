@@ -3,6 +3,7 @@
 
 #include "FlowFieldManager.h"
 
+#include "AGP/Characters/EnemyCharacter.h"
 #include "AGP/Components/AINavigationComponent.h"
 
 class APlayerCharacter;
@@ -63,7 +64,25 @@ void AFlowFieldManager::UnregisterEnemy(UAINavigationComponent* Enemy)
 
 void AFlowFieldManager::UpdateEnemyStates()
 {
+	// Gather player positions
+	TArray<FVector> PlayerLocations;
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		const APlayerController* PC = It->Get();
+		if (const APawn* Pawn = PC ? PC->GetPawn() : nullptr)
+		{
+			PlayerLocations.Add(Pawn->GetActorLocation());
+		}
+	}
 	
+	// Removes dead entries from the enemies array
+	Enemies.RemoveAll([](const TWeakObjectPtr<UAINavigationComponent>& E) {return !E.IsValid(); });
+	
+	
+	for (const TWeakObjectPtr<UAINavigationComponent>& Enemy : Enemies)
+	{
+		Enemy->UpdateStateFromPlayers(PlayerLocations);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -99,19 +118,5 @@ void AFlowFieldManager::BeginPlay()
 	
 	// repeatedly triggers the set goal location according to the set interval
 	GetWorldTimerManager().SetTimer(GoalTimer, this, &AFlowFieldManager::SetGoalLocation, GoalUpdateInterval, true);
+	GetWorldTimerManager().SetTimer(StateTimer, this, &AFlowFieldManager::UpdateEnemyStates, StateUpdateInterval, true);
 }
-
-void AFlowFieldManager::SetEnemies()
-{
-	TArray<AActor*> AttachedActors;
-	GetAttachedActors(AttachedActors);
-	
-	for (AActor* ChildActor : AttachedActors)
-	{
-		if (AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(ChildActor))
-		{
-			Enemies.Add(Enemy);
-		}
-	}
-}
-

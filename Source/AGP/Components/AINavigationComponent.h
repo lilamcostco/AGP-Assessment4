@@ -46,7 +46,16 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	// Updates state based on player locations and radius
+	// Called by the FlowFieldManager
+	void UpdateStateFromPlayers(const TArray<FVector>& PlayerLocations);
+
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	
+	
 private:
+	
 	UPROPERTY()
 	TObjectPtr<AFlowFieldManager> Manager;
 	UPROPERTY()
@@ -57,9 +66,6 @@ private:
 	
 	AFlowFieldGrid* GetGrid();
 	void MoveEnemy(float DeltaTime);
-	
-	// Updates the state when in the radius or outside of radius
-	void UpdateState();
 	
 	// void CheckFlowFieldCell();
 	// updates only when the active cell has changed
