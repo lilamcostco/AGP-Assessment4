@@ -39,14 +39,11 @@ protected:
 	bool bDrawFlowDebug = true;
 
 	FTimerHandle GoalTimer;
-	FIntPoint LastGoalCell = FIntPoint(MIN_int32, MIN_int32);
+	TArray<FIntPoint> LastGoalCells;
 	
 private:
 	UPROPERTY()
 	TObjectPtr<AFlowFieldGrid> FlowGrid;
-	
-	APlayerCharacter* Target;
-	APlayerCharacter* FindPlayer();
 	
 	TArray<AEnemyCharacter*> Enemies;
 	void SetEnemies();

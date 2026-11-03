@@ -3,11 +3,7 @@
 
 #include "FlowFieldManager.h"
 
-#include "EngineUtils.h"
-#include "SWarningOrErrorBox.h"
-#include "AGP/Characters/PlayerCharacter.h"
 #include "AGP/Components/AINavigationComponent.h"
-#include "Kismet/GameplayStatics.h"
 
 class APlayerCharacter;
 // Sets default values
@@ -21,34 +17,35 @@ AFlowFieldManager::AFlowFieldManager()
 
 void AFlowFieldManager::SetGoalLocation()
 {
-	if (!FlowGrid) return;
+	if (!HasAuthority() || !FlowGrid) return;
 	
-	if (!IsValid(Target))
+	TArray<FIntPoint> GoalCells;
+	
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		Target = FindPlayer();
-		if (!Target) return;
+		const APlayerController* PC = It->Get();
+		const APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+		if (!Pawn) continue;
+		
+		const FIntPoint Cell = FlowGrid->WorldToCell(Pawn->GetActorLocation());
+		if (FlowGrid->GetCost(Cell) != AFlowFieldGrid::CostBlocked)
+		{
+			GoalCells.AddUnique(Cell);
+		}
 	}
 	
-	const FVector TargetLocation = Target->GetActorLocation();
-	const FIntPoint Cell = FlowGrid->WorldToCell(TargetLocation);
+	if (GoalCells.IsEmpty() || GoalCells == LastGoalCells) return;
 	
-	// making sure the Goal Cell isn't the same as before for efficiency
-	if (Cell == LastGoalCell) return;
-	
-	if (FlowGrid->SetGoal(TargetLocation))
+	if (FlowGrid->SetGoals(GoalCells))
 	{
-		LastGoalCell = Cell;
-		
+		LastGoalCells = GoalCells;
 		if (bDrawFlowDebug)
 		{
-			FlowGrid->DrawDebugFlowField(GoalUpdateInterval);
-		}
-		// Updating All the enemies Flow Field
-		for (AEnemyCharacter* Enemy : Enemies)
-		{
-			Enemy->FindComponentByClass<UAINavigationComponent>()->UpdateFlowField(FlowGrid);
+			FlushPersistentDebugLines(GetWorld());
+			FlowGrid->DrawDebugFlowField(0.f);
 		}
 	}
+	
 }
 
 // Called when the game starts or when spawned
@@ -56,7 +53,7 @@ void AFlowFieldManager::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (!HasAuthority()) return;
+	if (!HasAuthority()) return; // only generates on the server
 	
 	// setting the FlowGrid to be the actor attached to the manager
 	TArray<AActor*> AttachedActors;
@@ -79,15 +76,8 @@ void AFlowFieldManager::BeginPlay()
 	
 	
 	FlowGrid->BuildGrid();      // guarantees the origin and cost field exist
-	Target = FindPlayer();
 	
 	GetWorldTimerManager().SetTimer(GoalTimer, this, &AFlowFieldManager::SetGoalLocation, GoalUpdateInterval, true);
-}
-
-APlayerCharacter* AFlowFieldManager::FindPlayer()
-{
-	//Only works for single player, NEED TO CHANGE FOR MULTIPLAYER
-	return Cast<APlayerCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
 }
 
 void AFlowFieldManager::SetEnemies()
