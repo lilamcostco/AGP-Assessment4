@@ -7,6 +7,13 @@
 #include "Components/ActorComponent.h"
 #include "AINavigationComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class EAIState : uint8
+{
+	Idle,
+	Chasing
+};
+
 
 class AFlowFieldManager;
 
