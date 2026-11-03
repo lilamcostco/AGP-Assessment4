@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "FlowFieldGrid.h"
-#include "AGP/Characters/EnemyCharacter.h"
-#include "AGP/Characters/PlayerCharacter.h"
 #include "GameFramework/Actor.h"
 #include "FlowFieldManager.generated.h"
+
+class UAINavigationComponent;
 
 UCLASS()
 class AGP_API AFlowFieldManager : public AActor
@@ -18,14 +18,14 @@ public:
 	// Sets default values for this actor's properties
 	AFlowFieldManager();
 	
-	UPROPERTY(EditAnywhere, Category = "Flow")
-	TSubclassOf<AFlowFieldGrid> GridClass;
-	
 	UFUNCTION(BlueprintPure, Category = "Flow")
 	AFlowFieldGrid* GetGrid() const { return FlowGrid; }
 	
-	UFUNCTION(Category = "Flow")
+	UFUNCTION(BlueprintCallable, Category = "Flow")
 	void SetGoalLocation();
+	
+	void RegisterEnemy(UAINavigationComponent* Enemy);
+	void UnregisterEnemy(UAINavigationComponent* Enemy);
 
 protected:
 	// Called when the game starts or when spawned
@@ -45,7 +45,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<AFlowFieldGrid> FlowGrid;
 	
-	TArray<AEnemyCharacter*> Enemies;
-	void SetEnemies();
+	TArray<TWeakObjectPtr<UAINavigationComponent>> Enemies;
+	FTimerHandle StateTimer;
+	void UpdateEnemyStates();
 	
+	UPROPERTY(EditAnywhere, Category = "Flow")
+	float StateUpdateInterval = 0.25f;
 };

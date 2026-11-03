@@ -48,6 +48,24 @@ void AFlowFieldManager::SetGoalLocation()
 	
 }
 
+void AFlowFieldManager::RegisterEnemy(UAINavigationComponent* Enemy)
+{
+	if (Enemy)
+	{
+		Enemies.AddUnique(Enemy);
+	}
+}
+
+void AFlowFieldManager::UnregisterEnemy(UAINavigationComponent* Enemy)
+{
+	Enemies.Remove(Enemy);
+}
+
+void AFlowFieldManager::UpdateEnemyStates()
+{
+	
+}
+
 // Called when the game starts or when spawned
 void AFlowFieldManager::BeginPlay()
 {
