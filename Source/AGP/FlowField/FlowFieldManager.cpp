@@ -76,7 +76,10 @@ void AFlowFieldManager::BeginPlay()
 	
 	
 	FlowGrid->BuildGrid();      // guarantees the origin and cost field exist
+	LastGoalCells.Reset();
+	SetGoalLocation(); // preliminary set goal
 	
+	// repeatedly triggers the set goal location according to the set interval
 	GetWorldTimerManager().SetTimer(GoalTimer, this, &AFlowFieldManager::SetGoalLocation, GoalUpdateInterval, true);
 }
 
